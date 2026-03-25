@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "device-simulator"
+version = "0.1.0"
+description = "Fleet Device Simulator"
+authors = ["Fleet Team"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+paho-mqtt = "^2.0.0"
+python-dotenv = "^1.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

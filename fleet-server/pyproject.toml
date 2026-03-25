@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "fleet-server"
+version = "0.1.0"
+description = "Fleet Controller Backend"
+authors = ["Fleet Team"]
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111.0"
+uvicorn = {extras = ["standard"], version = "^0.30.0"}
+paho-mqtt = "^2.0.0"
+sqlalchemy = "^2.0.0"
+alembic = "^1.13.0"
+websockets = "^12.0"
+python-dotenv = "^1.0.0"
+aiofiles = "^23.0.0"
+pydantic-settings = "^2.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

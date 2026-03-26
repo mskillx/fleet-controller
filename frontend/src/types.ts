@@ -4,6 +4,7 @@ export interface DeviceInfo {
   sensor1: number
   sensor2: number
   sensor3: number
+  version: string
 }
 
 export interface DeviceStat {
@@ -13,6 +14,7 @@ export interface DeviceStat {
   sensor1: number
   sensor2: number
   sensor3: number
+  version?: string | null
   created_at?: string
 }
 
@@ -22,6 +24,7 @@ export interface WsPayload {
   sensor1: number
   sensor2: number
   sensor3: number
+  version: string
 }
 
 export interface WsMessage {
@@ -36,6 +39,7 @@ export interface CommandLog {
   command: string
   payload: string | null
   status: 'sent' | 'executed' | 'failed'
+  response: string | null
   sent_at: string | null
   responded_at: string | null
 }

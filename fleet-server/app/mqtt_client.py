@@ -58,6 +58,7 @@ def _handle_stats(payload: dict) -> None:
             sensor1=payload["sensor1"],
             sensor2=payload["sensor2"],
             sensor3=payload["sensor3"],
+            version=payload.get("version"),
         )
         db.add(stat)
         db.commit()
@@ -77,6 +78,8 @@ def _handle_command_response(payload: dict) -> None:
         if log:
             log.status = payload.get("status", "executed")
             log.responded_at = datetime.now(timezone.utc)
+            if "response" in payload:
+                log.response = json.dumps(payload["response"])
             db.commit()
             logger.info(f"Command {command_id} acknowledged by {payload.get('device_id')} — {log.status}")
             broadcast_to_websockets({"type": "command_response", "data": payload})

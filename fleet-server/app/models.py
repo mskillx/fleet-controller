@@ -12,6 +12,7 @@ class DeviceStat(Base):
     sensor1 = Column(Float, nullable=False)
     sensor2 = Column(Float, nullable=False)
     sensor3 = Column(Float, nullable=False)
+    version = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -24,5 +25,6 @@ class CommandLog(Base):
     command = Column(String, nullable=False)
     payload = Column(String, nullable=True)       # JSON string
     status = Column(String, default="sent")       # sent | executed | failed
+    response = Column(String, nullable=True)      # JSON string from device
     sent_at = Column(DateTime(timezone=True), server_default=func.now())
     responded_at = Column(DateTime(timezone=True), nullable=True)

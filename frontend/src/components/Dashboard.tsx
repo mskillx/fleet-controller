@@ -47,6 +47,7 @@ export default function Dashboard() {
               sensor1: msg.data.sensor1,
               sensor2: msg.data.sensor2,
               sensor3: msg.data.sensor3,
+              version: msg.data.version,
             }
             if (idx >= 0) {
               const next = [...prev]

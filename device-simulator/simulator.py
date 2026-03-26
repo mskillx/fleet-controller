@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 DEVICE_ID = os.getenv("DEVICE_ID", f"device-{uuid.uuid4().hex[:6]}")
+DEVICE_VERSION = os.getenv("DEVICE_VERSION", "v1.0.0")
 
 
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -21,15 +22,52 @@ def on_connect(client, userdata, flags, rc, properties=None):
     client.subscribe(f"fleet/{DEVICE_ID}/commands")
 
 
+def bump_version(version: str) -> str:
+    """Increment the patch number of a semver string like v1.0.1."""
+    try:
+        prefix = version[0] if version[0].isalpha() else ""
+        parts = version.lstrip("vV").split(".")
+        parts[-1] = str(int(parts[-1]) + 1)
+        return prefix + ".".join(parts)
+    except Exception:
+        return version
+
+
+def build_response_data(command: str, payload: dict) -> dict:
+    global DEVICE_VERSION
+    if command == "ping":
+        return {"message": "pong"}
+    if command == "reboot":
+        return {"message": "Rebooting device", "eta_seconds": random.randint(5, 30)}
+    if command == "reset_sensors":
+        return {"message": "Sensors reset", "values": [0.0, 0.0, 0.0]}
+    if command == "report_full":
+        return {
+            "message": "Full report",
+            "sensor1": round(random.uniform(0, 100), 2),
+            "sensor2": round(random.uniform(20, 80), 2),
+            "sensor3": round(random.uniform(-10, 50), 2),
+            "uptime_seconds": random.randint(100, 100000),
+        }
+    if command == "update_software":
+        target = payload.get("version")
+        new_version = target if target else bump_version(DEVICE_VERSION)
+        DEVICE_VERSION = new_version
+        return {"message": "Software updated", "version": new_version}
+    return {"message": f"Command '{command}' acknowledged"}
+
+
 def on_message(client, userdata, msg):
     try:
         payload = json.loads(msg.payload.decode())
         logger.info(f"[{DEVICE_ID}] Received command: {payload}")
+        command = payload.get("command", "")
         response = {
             "device_id": DEVICE_ID,
             "command_id": payload.get("command_id"),
             "status": "executed",
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "response": build_response_data(command, payload.get("payload") or {}),
         }
         client.publish(f"fleet/{DEVICE_ID}/commands/response", json.dumps(response))
     except Exception as e:
@@ -43,6 +81,7 @@ def generate_stats() -> dict:
         "sensor1": round(random.uniform(0, 100), 2),
         "sensor2": round(random.uniform(20, 80), 2),
         "sensor3": round(random.uniform(-10, 50), 2),
+        "version": DEVICE_VERSION,
     }
 
 
@@ -67,7 +106,7 @@ def main():
         topic = f"fleet/{DEVICE_ID}/stats"
         client.publish(topic, json.dumps(stats))
         logger.debug(f"[{DEVICE_ID}] Published to {topic}: {stats}")
-        time.sleep(random.uniform(2, 5)/3)
+        time.sleep(random.uniform(2, 5))
 
 
 if __name__ == "__main__":

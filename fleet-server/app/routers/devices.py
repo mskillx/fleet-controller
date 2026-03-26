@@ -34,6 +34,7 @@ def list_devices(db: Session = Depends(get_db)):
             sensor1=s.sensor1,
             sensor2=s.sensor2,
             sensor3=s.sensor3,
+            version=s.version
         )
         for s in latest_stats
     ]

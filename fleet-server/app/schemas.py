@@ -9,6 +9,7 @@ class DeviceStatBase(BaseModel):
     sensor1: float
     sensor2: float
     sensor3: float
+    version: Optional[str] = None
 
 
 class DeviceStatCreate(DeviceStatBase):
@@ -29,6 +30,8 @@ class DeviceInfo(BaseModel):
     sensor1: float
     sensor2: float
     sensor3: float
+    version: Optional[str] = None
+
 
 
 class CommandRequest(BaseModel):
@@ -43,6 +46,7 @@ class CommandLog(BaseModel):
     command: str
     payload: Optional[str] = None
     status: str
+    response: Optional[str] = None
     sent_at: Optional[datetime] = None
     responded_at: Optional[datetime] = None
 

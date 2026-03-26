@@ -1,0 +1,23 @@
+[package]
+name = "fleet-integration"
+version = "0.1.0"
+edition = "2021"
+description = "Rust SDK for integrating devices with the Fleet Controller"
+
+[lib]
+name = "fleet_integration"
+path = "src/lib.rs"
+
+[[example]]
+name = "example_device"
+path = "examples/example_device.rs"
+
+[dependencies]
+rumqttc = "0.24"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+rand = "0.8"
+chrono = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

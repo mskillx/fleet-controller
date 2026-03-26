@@ -1,6 +1,6 @@
+import { Activity, Antenna, Cpu, Thermometer, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { DeviceInfo } from '../types'
-import { Activity, Cpu, Thermometer, Zap } from 'lucide-react'
 
 interface Props {
   device: DeviceInfo
@@ -36,6 +36,7 @@ export default function DeviceCard({ device }: Props) {
         <SensorRow icon={<Cpu size={14} />} label="Sensor 1" value={device.sensor1} unit="%" />
         <SensorRow icon={<Thermometer size={14} />} label="Sensor 2" value={device.sensor2} unit="°C" />
         <SensorRow icon={<Zap size={14} />} label="Sensor 3" value={device.sensor3} unit="V" />
+        <SensorRow icon={<Antenna size={14} />} label="Version" value={device.version} unit="" />
       </div>
 
       <p className="text-xs text-secondary/60 mt-4 flex items-center gap-1">
@@ -54,7 +55,7 @@ function SensorRow({
 }: {
   icon: React.ReactNode
   label: string
-  value: number
+  value: number|string
   unit: string
 }) {
   return (
@@ -63,7 +64,7 @@ function SensorRow({
         {icon} {label}
       </span>
       <span className="text-bg-light font-mono">
-        {value.toFixed(1)} {unit}
+        {typeof value === 'number' ? value.toFixed(1) : value} {unit}
       </span>
     </div>
   )

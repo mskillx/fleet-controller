@@ -1,14 +1,16 @@
 /** @type {import('tailwindcss').Config} */
+const themes = {
+  blue: require('./themes/blue'),
+  orange: require('./themes/orange'),
+}
+
+const theme = themes[process.env.VITE_THEME] ?? themes.blue
+
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
-      colors: {
-        'primary-dark': '#061E29',
-        primary: '#1D546D',
-        secondary: '#5F9598',
-        'bg-light': '#F3F4F4',
-      },
+      colors: theme,
     },
   },
   plugins: [],

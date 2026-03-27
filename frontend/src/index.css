@@ -3,5 +3,5 @@
 @tailwind utilities;
 
 body {
-  @apply bg-primary-dark text-bg-light min-h-screen;
+  @apply bg-background text-text-primary min-h-screen;
 }

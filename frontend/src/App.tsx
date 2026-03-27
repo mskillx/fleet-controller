@@ -4,9 +4,9 @@ import DeviceDetail from './components/DeviceDetail'
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-primary-dark">
-      <nav className="bg-primary border-b border-secondary/30 px-6 py-4">
-        <a href="/" className="text-xl font-bold text-bg-light tracking-wide">
+    <div className="min-h-screen bg-background">
+      <nav className="bg-surface border-b border-border px-6 py-4">
+        <a href="/" className="text-xl font-bold text-text-primary tracking-wide">
           Fleet Controller
         </a>
       </nav>

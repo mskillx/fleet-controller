@@ -1,5 +1,10 @@
 FROM node:20-alpine AS builder
 
+ARG VITE_THEME=blue
+ARG VITE_API_URL=http://localhost:8000
+ENV VITE_THEME=$VITE_THEME
+ENV VITE_API_URL=$VITE_API_URL
+
 WORKDIR /app
 
 COPY package*.json ./

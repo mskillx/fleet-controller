@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
 from app import models
 from app.mqtt_client import start_mqtt_client, websocket_clients
-from app.routers import devices, stats
+from app.routers import devices, stats, factories
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ app.add_middleware(
 
 app.include_router(devices.router)
 app.include_router(stats.router)
+app.include_router(factories.router)
 
 
 @app.get("/health")

@@ -47,6 +47,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
     logger.info(f"Connected to MQTT broker with result code {rc}")
     client.subscribe("fleet/+/stats")
     client.subscribe("fleet/+/commands/response")
+    client.subscribe("fleet/+/register")
 
 
 def _handle_stats(payload: dict) -> None:
@@ -64,6 +65,34 @@ def _handle_stats(payload: dict) -> None:
         db.commit()
         logger.debug(f"Stored stats for {payload['device_id']}")
         broadcast_to_websockets({"type": "stats_update", "data": payload})
+    finally:
+        db.close()
+
+
+def _handle_register(payload: dict) -> None:
+    device_id = payload.get("device_id")
+    factory_name = payload.get("factory")
+    if not device_id or not factory_name:
+        logger.warning(f"Invalid registration payload: {payload}")
+        return
+    db: Session = SessionLocal()
+    try:
+        factory = db.query(models.Factory).filter(models.Factory.name == factory_name).first()
+        if not factory:
+            factory = models.Factory(name=factory_name)
+            db.add(factory)
+            db.flush()
+
+        device = db.query(models.Device).filter(models.Device.device_id == device_id).first()
+        if not device:
+            device = models.Device(device_id=device_id, factory_id=factory.id)
+            db.add(device)
+        else:
+            device.factory_id = factory.id
+
+        db.commit()
+        logger.info(f"Device '{device_id}' registered to factory '{factory_name}'")
+        broadcast_to_websockets({"type": "device_registered", "data": {"device_id": device_id, "factory": factory_name}})
     finally:
         db.close()
 
@@ -95,6 +124,8 @@ def on_message(client, userdata, msg):
             _handle_stats(payload)
         elif "/commands/response" in topic:
             _handle_command_response(payload)
+        elif "/register" in topic:
+            _handle_register(payload)
     except Exception as e:
         logger.error(f"Error processing MQTT message: {e}")
 

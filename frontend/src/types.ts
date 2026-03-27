@@ -5,6 +5,13 @@ export interface DeviceInfo {
   sensor2: number
   sensor3: number
   version: string
+  factory_name?: string | null
+}
+
+export interface Factory {
+  id: number
+  name: string
+  created_at?: string
 }
 
 export interface DeviceStat {

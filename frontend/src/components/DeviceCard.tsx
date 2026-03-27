@@ -1,4 +1,4 @@
-import { Activity, Antenna, Cpu, Thermometer, Zap } from 'lucide-react'
+import { Activity, Antenna, Cpu, Factory, Thermometer, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { DeviceInfo } from '../types'
 
@@ -17,15 +17,15 @@ export default function DeviceCard({ device }: Props) {
   return (
     <div
       onClick={() => navigate(`/devices/${device.device_id}`)}
-      className="bg-primary border border-secondary/30 rounded-xl p-5 cursor-pointer hover:border-secondary transition-all hover:shadow-lg hover:shadow-primary-dark/40"
+      className="bg-surface border border-border rounded-xl p-5 cursor-pointer hover:border-secondary transition-all hover:shadow-lg hover:shadow-background/40"
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-bg-light">{device.device_id}</h3>
+        <h3 className="font-semibold text-text-primary">{device.device_id}</h3>
         <span
           className={`text-xs px-2 py-1 rounded-full font-medium ${
             isRecent
               ? 'bg-secondary/20 text-secondary'
-              : 'bg-primary-dark text-secondary/50'
+              : 'bg-background text-text-secondary/50'
           }`}
         >
           {isRecent ? 'Live' : 'Idle'}
@@ -39,7 +39,14 @@ export default function DeviceCard({ device }: Props) {
         <SensorRow icon={<Antenna size={14} />} label="Version" value={device.version} unit="" />
       </div>
 
-      <p className="text-xs text-secondary/60 mt-4 flex items-center gap-1">
+      {device.factory_name && (
+        <p className="text-xs text-text-secondary/50 mt-3 flex items-center gap-1">
+          <Factory size={12} />
+          {device.factory_name}
+        </p>
+      )}
+
+      <p className="text-xs text-text-secondary/60 mt-1 flex items-center gap-1">
         <Activity size={12} />
         Last seen {formatTime(device.last_seen)}
       </p>
@@ -60,10 +67,10 @@ function SensorRow({
 }) {
   return (
     <div className="flex items-center justify-between text-sm">
-      <span className="text-secondary flex items-center gap-1">
+      <span className="text-text-secondary flex items-center gap-1">
         {icon} {label}
       </span>
-      <span className="text-bg-light font-mono">
+      <span className="text-text-primary font-mono">
         {typeof value === 'number' ? value.toFixed(1) : value} {unit}
       </span>
     </div>

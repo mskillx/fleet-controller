@@ -1,18 +1,21 @@
 import axios from 'axios'
-import type { CommandLog, DeviceInfo, DeviceStat } from '../types'
+import type { CommandLog, DeviceInfo, DeviceStat, Factory } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const api = axios.create({ baseURL: API_BASE })
 
 export const getDevices = (): Promise<DeviceInfo[]> =>
-  api.get('/devices').then((r) => r.data)
+  api.get('/devices/').then((r) => r.data)
+
+export const getFactories = (): Promise<Factory[]> =>
+  api.get('/factories/').then((r) => r.data)
 
 export const getDeviceStats = (id: string): Promise<DeviceStat> =>
   api.get(`/devices/${id}/stats`).then((r) => r.data)
 
 export const getAllStats = (): Promise<DeviceInfo[]> =>
-  api.get('/stats').then((r) => r.data)
+  api.get('/stats/').then((r) => r.data)
 
 export const getHistory = (deviceId?: string, limit = 50): Promise<DeviceStat[]> =>
   api

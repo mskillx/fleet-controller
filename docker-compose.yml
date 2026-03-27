@@ -25,12 +25,14 @@ services:
       - fleet-net
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_THEME: ${VITE_THEME:-blue}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
     container_name: frontend
     ports:
       - "3000:80"
-    environment:
-      - VITE_API_URL=http://localhost:8000
     depends_on:
       - fleet-server
     networks:

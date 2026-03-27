@@ -11,15 +11,21 @@ import paho.mqtt.client as mqtt
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
+
+
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 DEVICE_ID = os.getenv("DEVICE_ID", f"device-{uuid.uuid4().hex[:6]}")
 DEVICE_VERSION = os.getenv("DEVICE_VERSION", "v1.0.0")
+FACTORY_NAME = os.getenv("FACTORY_NAME", "default-factory")
 
 
 def on_connect(client, userdata, flags, rc, properties=None):
     logger.info(f"[{DEVICE_ID}] Connected to broker (rc={rc})")
     client.subscribe(f"fleet/{DEVICE_ID}/commands")
+    registration = {"device_id": DEVICE_ID, "factory": FACTORY_NAME}
+    client.publish(f"fleet/{DEVICE_ID}/register", json.dumps(registration))
+    logger.info(f"[{DEVICE_ID}] Registered to factory '{FACTORY_NAME}'")
 
 
 def bump_version(version: str) -> str:
@@ -101,7 +107,16 @@ def main():
     client.loop_start()
     logger.info(f"[{DEVICE_ID}] Starting to publish stats...")
 
+    REGISTER_INTERVAL = 60  # re-send registration every 60 seconds
+    last_registered = 0.0
+
     while True:
+        now = time.time()
+        if now - last_registered >= REGISTER_INTERVAL:
+            registration = {"device_id": DEVICE_ID, "factory": FACTORY_NAME}
+            client.publish(f"fleet/{DEVICE_ID}/register", json.dumps(registration))
+            last_registered = now
+
         stats = generate_stats()
         topic = f"fleet/{DEVICE_ID}/stats"
         client.publish(topic, json.dumps(stats))

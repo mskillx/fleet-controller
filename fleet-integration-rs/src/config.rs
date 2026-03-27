@@ -44,7 +44,7 @@ impl Default for DeviceConfig {
             stats_interval_min: env::var("STATS_INTERVAL_MIN")
                 .ok()
                 .and_then(|v| v.parse().ok())
-                .unwrap_or(0.2),
+                .unwrap_or(0.3),
             stats_interval_max: env::var("STATS_INTERVAL_MAX")
                 .ok()
                 .and_then(|v| v.parse().ok())

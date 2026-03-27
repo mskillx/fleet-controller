@@ -1,6 +1,6 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List
 
@@ -27,6 +27,10 @@ def list_devices(db: Session = Depends(get_db)):
         .join(subquery, models.DeviceStat.id == subquery.c.max_id)
         .all()
     )
+    device_rows = {
+        d.device_id: d
+        for d in db.query(models.Device).options(joinedload(models.Device.factory)).all()
+    }
     return [
         schemas.DeviceInfo(
             device_id=s.device_id,
@@ -34,7 +38,10 @@ def list_devices(db: Session = Depends(get_db)):
             sensor1=s.sensor1,
             sensor2=s.sensor2,
             sensor3=s.sensor3,
-            version=s.version
+            version=s.version,
+            factory_name=device_rows[s.device_id].factory.name
+                if s.device_id in device_rows and device_rows[s.device_id].factory
+                else None,
         )
         for s in latest_stats
     ]

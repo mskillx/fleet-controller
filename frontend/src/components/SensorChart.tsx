@@ -44,9 +44,9 @@ export default function SensorChart({ data }: Props) {
     .reverse()
     .map((d) => ({
       time: fmt(d.timestamp),
-      'Sensor 1': d.sensor1,
-      'Sensor 2': d.sensor2,
-      'Sensor 3': d.sensor3,
+      'Disk Usage': d.disk_usage,
+      'Lidar': d.lidar,
+      'COM4': d.com4,
     }))
 
   return (
@@ -61,9 +61,9 @@ export default function SensorChart({ data }: Props) {
           itemStyle={{ color: colors.text }}
         />
         <Legend wrapperStyle={{ color: colors.axis }} />
-        <Line type="monotone" dataKey="Sensor 1" stroke={colors.lines[0]} dot={false} strokeWidth={2} />
-        <Line type="monotone" dataKey="Sensor 2" stroke={colors.lines[1]} dot={false} strokeWidth={2} />
-        <Line type="monotone" dataKey="Sensor 3" stroke={colors.lines[2]} dot={false} strokeWidth={2} />
+        <Line type="monotone" dataKey="Disk Usage" stroke={colors.lines[0]} dot={false} strokeWidth={2} />
+        <Line type="monotone" dataKey="Lidar" stroke={colors.lines[1]} dot={false} strokeWidth={2} />
+        <Line type="monotone" dataKey="COM4" stroke={colors.lines[2]} dot={false} strokeWidth={2} />
       </LineChart>
     </ResponsiveContainer>
   )

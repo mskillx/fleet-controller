@@ -1,4 +1,4 @@
-import { Activity, Antenna, Cpu, Factory, Thermometer, Zap } from 'lucide-react'
+import { Activity, Camera, Factory, GitCommit, HardDrive, Layers, Radio, Waves } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { DeviceInfo } from '../types'
 
@@ -33,18 +33,46 @@ export default function DeviceCard({ device }: Props) {
       </div>
 
       <div className="space-y-2">
-        <SensorRow icon={<Cpu size={14} />} label="Sensor 1" value={device.sensor1} unit="%" />
-        <SensorRow icon={<Thermometer size={14} />} label="Sensor 2" value={device.sensor2} unit="°C" />
-        <SensorRow icon={<Zap size={14} />} label="Sensor 3" value={device.sensor3} unit="V" />
-        <SensorRow icon={<Antenna size={14} />} label="Version" value={device.version} unit="" />
+        <StatusRow
+          icon={<Radio size={14} />}
+          label="Lights"
+          value={device.lights_on == null ? '—' : device.lights_on ? 'ON' : 'OFF'}
+          active={device.lights_on ?? false}
+        />
+        <StatusRow
+          icon={<Camera size={14} />}
+          label="Camera"
+          value={device.is_camera_acquiring == null ? '—' : device.is_camera_acquiring ? 'Acquiring' : 'Idle'}
+          active={device.is_camera_acquiring ?? false}
+        />
+        <MetricRow icon={<HardDrive size={14} />} label="Disk" value={device.disk_usage} unit="%" />
+        <MetricRow icon={<Waves size={14} />} label="Lidar" value={device.lidar} unit=" mm" />
+        <MetricRow icon={<Layers size={14} />} label="COM4" value={device.com4} unit="" />
+        {device.analysis_queue != null && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-text-secondary flex items-center gap-1">
+              <Layers size={14} /> Queue
+            </span>
+            <span className="text-text-primary font-mono">{device.analysis_queue}</span>
+          </div>
+        )}
       </div>
 
-      {device.factory_name && (
-        <p className="text-xs text-text-secondary/50 mt-3 flex items-center gap-1">
-          <Factory size={12} />
-          {device.factory_name}
-        </p>
-      )}
+      <div className="flex items-center justify-between mt-3">
+        {device.factory_name ? (
+          <p className="text-xs text-text-secondary/50 flex items-center gap-1">
+            <Factory size={12} />
+            {device.factory_name}
+          </p>
+        ) : <span />}
+
+        {device.current_version && (
+          <span className="flex items-center gap-1 text-xs font-mono text-text-secondary/60 bg-background px-1.5 py-0.5 rounded">
+            <GitCommit size={11} />
+            v{device.current_version}
+          </span>
+        )}
+      </div>
 
       <p className="text-xs text-text-secondary/60 mt-1 flex items-center gap-1">
         <Activity size={12} />
@@ -54,7 +82,7 @@ export default function DeviceCard({ device }: Props) {
   )
 }
 
-function SensorRow({
+function MetricRow({
   icon,
   label,
   value,
@@ -62,7 +90,7 @@ function SensorRow({
 }: {
   icon: React.ReactNode
   label: string
-  value: number|string
+  value?: number | null
   unit: string
 }) {
   return (
@@ -71,7 +99,30 @@ function SensorRow({
         {icon} {label}
       </span>
       <span className="text-text-primary font-mono">
-        {typeof value === 'number' ? value.toFixed(1) : value} {unit}
+        {value == null ? '—' : `${value.toFixed(1)}${unit}`}
+      </span>
+    </div>
+  )
+}
+
+function StatusRow({
+  icon,
+  label,
+  value,
+  active,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  active: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-text-secondary flex items-center gap-1">
+        {icon} {label}
+      </span>
+      <span className={`font-mono text-xs px-1.5 py-0.5 rounded ${active ? 'text-secondary bg-secondary/10' : 'text-text-secondary/60'}`}>
+        {value}
       </span>
     </div>
   )

@@ -1,13 +1,15 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import settings
 from app.database import engine
 from app import models
 from app.mqtt_client import start_mqtt_client, websocket_clients
-from app.routers import devices, stats, factories
+from app.routers import devices, stats, factories, updates
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,6 +22,7 @@ mqtt_client = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global mqtt_client
+    os.makedirs(settings.update_packages_dir, exist_ok=True)
     mqtt_client = start_mqtt_client()
     yield
     if mqtt_client:
@@ -39,6 +42,7 @@ app.add_middleware(
 app.include_router(devices.router)
 app.include_router(stats.router)
 app.include_router(factories.router)
+app.include_router(updates.router)
 
 
 @app.get("/health")

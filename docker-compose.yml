@@ -16,9 +16,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MQTT_BROKER=mosquitto
+      - MQTT_BROKER=${MQTT_BROKER}
       - MQTT_PORT=1883
       - DATABASE_URL=sqlite:///./fleet.db
+      - UPDATE_PACKAGES_DIR=/app/packages
+      - SERVER_BASE_URL=${SERVER_BASE_URL:-http://localhost:8000}
+    volumes:
+      - update_packages:/app/packages
     depends_on:
       - mosquitto
     networks:
@@ -39,10 +43,16 @@ services:
       - fleet-net
 
   device-simulator:
-    build: ./device-simulator
+    build:
+      context: .
+      dockerfile: ./device-simulator/Dockerfile
     environment:
-      - MQTT_BROKER=mosquitto
+      - MQTT_BROKER=${MQTT_BROKER}
+      - RUST_LOG=info
       - MQTT_PORT=1883
+      - DEVICE_VERSION=0.0.0
+      - UPDATE_BASE_DIR=/tmp/fleet-app
+      - UPDATE_FAILURE_RATE=0.1
     depends_on:
       - mosquitto
     networks:
@@ -51,3 +61,6 @@ services:
 networks:
   fleet-net:
     driver: bridge
+
+volumes:
+  update_packages:

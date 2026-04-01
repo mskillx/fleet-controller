@@ -35,10 +35,16 @@ def list_devices(db: Session = Depends(get_db)):
         schemas.DeviceInfo(
             device_id=s.device_id,
             last_seen=s.timestamp,
-            sensor1=s.sensor1,
-            sensor2=s.sensor2,
-            sensor3=s.sensor3,
-            version=s.version,
+            current_version=device_rows[s.device_id].current_version
+                if s.device_id in device_rows else None,
+            last_acquisition=s.last_acquisition,
+            last_boot=s.last_boot,
+            lights_on=s.lights_on,
+            disk_usage=s.disk_usage,
+            analysis_queue=s.analysis_queue,
+            is_camera_acquiring=s.is_camera_acquiring,
+            lidar=s.lidar,
+            com4=s.com4,
             factory_name=device_rows[s.device_id].factory.name
                 if s.device_id in device_rows and device_rows[s.device_id].factory
                 else None,

@@ -148,25 +148,20 @@ export default function DeviceDetail() {
 
       {activeTab === 'device' && (
         <>
-          {/* Latest sensor readings */}
+          {/* Latest device readings */}
           {latest && (
             <>
-              <div className="grid grid-cols-3 gap-4">
-                {(['sensor1', 'sensor2', 'sensor3'] as const).map((key, i) => (
-                  <div key={key} className="bg-surface border border-border rounded-xl p-4">
-                    <p className="text-text-secondary text-sm mb-1">Sensor {i + 1}</p>
-                    <p className="text-3xl font-bold text-text-primary font-mono">{latest[key].toFixed(2)}</p>
-                    <p className="text-xs text-text-secondary/60 mt-2">
-                      {new Date(latest.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <StatCard label="Disk Usage" value={latest.disk_usage != null ? `${latest.disk_usage.toFixed(1)} %` : '—'} />
+                <StatCard label="Lidar" value={latest.lidar != null ? `${latest.lidar.toFixed(1)} mm` : '—'} />
+                <StatCard label="COM4" value={latest.com4 != null ? `${latest.com4.toFixed(1)}` : '—'} />
+                <StatCard label="Queue" value={latest.analysis_queue != null ? String(latest.analysis_queue) : '—'} />
               </div>
-              <div className="bg-surface border border-border rounded-xl p-4 flex items-center gap-3">
-                <span className="text-text-secondary text-sm">Software version</span>
-                <span className="font-mono font-semibold text-text-primary">
-                  {latest.version ?? '—'}
-                </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <BoolCard label="Lights On" value={latest.lights_on} />
+                <BoolCard label="Camera Acquiring" value={latest.is_camera_acquiring} />
+                <InfoCard label="Last Acquisition" value={latest.last_acquisition ?? '—'} />
+                <InfoCard label="Last Boot" value={latest.last_boot ?? '—'} />
               </div>
             </>
           )}
@@ -315,6 +310,36 @@ export default function DeviceDetail() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4">
+      <p className="text-text-secondary text-sm mb-1">{label}</p>
+      <p className="text-2xl font-bold text-text-primary font-mono">{value}</p>
+    </div>
+  )
+}
+
+function BoolCard({ label, value }: { label: string; value?: boolean | null }) {
+  const active = value === true
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4">
+      <p className="text-text-secondary text-sm mb-1">{label}</p>
+      <p className={`text-lg font-bold font-mono ${active ? 'text-secondary' : 'text-text-secondary/50'}`}>
+        {value == null ? '—' : active ? 'YES' : 'NO'}
+      </p>
+    </div>
+  )
+}
+
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4">
+      <p className="text-text-secondary text-sm mb-1">{label}</p>
+      <p className="text-sm font-mono text-text-primary break-all">{value}</p>
     </div>
   )
 }

@@ -57,11 +57,16 @@ export default function Dashboard() {
             const idx = prev.findIndex((d) => d.device_id === msg.data.device_id)
             const updated: DeviceInfo = {
               device_id: msg.data.device_id,
-              last_seen: msg.data.timestamp,
-              sensor1: msg.data.sensor1,
-              sensor2: msg.data.sensor2,
-              sensor3: msg.data.sensor3,
-              version: msg.data.version,
+              last_seen: msg.data.clock,
+              current_version: msg.data.version ?? (idx >= 0 ? prev[idx].current_version : undefined),
+              last_acquisition: msg.data.last_acquisition,
+              last_boot: msg.data.last_boot,
+              lights_on: msg.data.lights_on,
+              disk_usage: msg.data.disk_usage,
+              analysis_queue: msg.data.analysis_queue,
+              is_camera_acquiring: msg.data.is_camera_acquiring,
+              lidar: msg.data.lidar,
+              com4: msg.data.com4,
               factory_name: idx >= 0 ? prev[idx].factory_name : undefined,
             }
             if (idx >= 0) {

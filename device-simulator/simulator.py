@@ -2,22 +2,29 @@ import json
 import logging
 import os
 import random
+import threading
 import time
 import uuid
 from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
 
+from updater import get_current_version, run_update
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
+STR_FORMAT = "%Y-%m-%d %H:%M:%S"
+UTC = timezone.utc
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 DEVICE_ID = os.getenv("DEVICE_ID", f"device-{uuid.uuid4().hex[:6]}")
-DEVICE_VERSION = os.getenv("DEVICE_VERSION", "v1.0.0")
 FACTORY_NAME = os.getenv("FACTORY_NAME", "default-factory")
+
+_boot_time = datetime.now(UTC).strftime(STR_FORMAT)
+_last_trigger = time.time() - random.uniform(10, 300)
 
 
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -28,38 +35,23 @@ def on_connect(client, userdata, flags, rc, properties=None):
     logger.info(f"[{DEVICE_ID}] Registered to factory '{FACTORY_NAME}'")
 
 
-def bump_version(version: str) -> str:
-    """Increment the patch number of a semver string like v1.0.1."""
-    try:
-        prefix = version[0] if version[0].isalpha() else ""
-        parts = version.lstrip("vV").split(".")
-        parts[-1] = str(int(parts[-1]) + 1)
-        return prefix + ".".join(parts)
-    except Exception:
-        return version
-
 
 def build_response_data(command: str, payload: dict) -> dict:
-    global DEVICE_VERSION
     if command == "ping":
-        return {"message": "pong"}
+        return {"message": "pong", "version": get_current_version()}
     if command == "reboot":
         return {"message": "Rebooting device", "eta_seconds": random.randint(5, 30)}
     if command == "reset_sensors":
-        return {"message": "Sensors reset", "values": [0.0, 0.0, 0.0]}
+        return {"message": "Sensors reset", "disk_usage": 0.0, "lidar": 0.0, "com4": 0.0}
     if command == "report_full":
         return {
             "message": "Full report",
-            "sensor1": round(random.uniform(0, 100), 2),
-            "sensor2": round(random.uniform(20, 80), 2),
-            "sensor3": round(random.uniform(-10, 50), 2),
+            "version": get_current_version(),
+            "disk_usage": round(random.uniform(20, 95), 1),
+            "lidar": round(random.uniform(100, 500), 1),
+            "com4": round(random.uniform(0, 50), 1),
             "uptime_seconds": random.randint(100, 100000),
         }
-    if command == "update_software":
-        target = payload.get("version")
-        new_version = target if target else bump_version(DEVICE_VERSION)
-        DEVICE_VERSION = new_version
-        return {"message": "Software updated", "version": new_version}
     return {"message": f"Command '{command}' acknowledged"}
 
 
@@ -68,12 +60,48 @@ def on_message(client, userdata, msg):
         payload = json.loads(msg.payload.decode())
         logger.info(f"[{DEVICE_ID}] Received command: {payload}")
         command = payload.get("command", "")
+        cmd_payload = payload.get("payload") or {}
+        command_id = payload.get("command_id")
+
+        if command == "update":
+            if os.getenv("OTA_UPDATER", "python").lower() == "rust":
+                logger.info(f"[{DEVICE_ID}] OTA updater is rust; ignoring update command in python simulator")
+                return
+
+            # Run the OTA updater in a separate daemon thread so it can manage
+            # the service lifecycle independently of this MQTT loop.
+            version = cmd_payload.get("version", "")
+            download_url = cmd_payload.get("download_url", "")
+            checksum = cmd_payload.get("checksum_sha256", "")
+            if not version or not download_url or not checksum:
+                logger.error(f"[{DEVICE_ID}] Invalid update payload: {cmd_payload}")
+                client.publish(
+                    f"fleet/{DEVICE_ID}/commands/response",
+                    json.dumps({
+                        "device_id": DEVICE_ID,
+                        "command_id": command_id,
+                        "status": "failed",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "response": {"error": "Missing version/download_url/checksum_sha256"},
+                    }),
+                )
+                return
+
+            #t = threading.Thread(
+            #    target=run_update,
+            #    args=(client, DEVICE_ID, command_id, version, download_url, checksum),
+            #    daemon=True,
+            #)
+            #t.start()
+            logger.info(f"[{DEVICE_ID}] OTA update v{version} started in background thread")
+            return
+
         response = {
             "device_id": DEVICE_ID,
-            "command_id": payload.get("command_id"),
+            "command_id": command_id,
             "status": "executed",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "response": build_response_data(command, payload.get("payload") or {}),
+            "response": build_response_data(command, cmd_payload),
         }
         client.publish(f"fleet/{DEVICE_ID}/commands/response", json.dumps(response))
     except Exception as e:
@@ -81,13 +109,21 @@ def on_message(client, userdata, msg):
 
 
 def generate_stats() -> dict:
+    global _last_trigger
+    if random.random() < 0.3:
+        _last_trigger = time.time()
     return {
+        "clock": datetime.now(UTC).strftime(STR_FORMAT),
+        "last_acquisition": datetime.fromtimestamp(_last_trigger, UTC).strftime(STR_FORMAT),
+        "last_boot": _boot_time,
         "device_id": DEVICE_ID,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "sensor1": round(random.uniform(0, 100), 2),
-        "sensor2": round(random.uniform(20, 80), 2),
-        "sensor3": round(random.uniform(-10, 50), 2),
-        "version": DEVICE_VERSION,
+        "version": get_current_version(),
+        "lights_on": random.choice([True, False]),
+        "disk_usage": round(random.uniform(20, 95), 1),
+        "analysis_queue": random.randint(0, 10),
+        "is_camera_acquiring": random.choice([True, False]),
+        "lidar": round(random.uniform(100, 500), 1),
+        "com4": round(random.uniform(0, 50), 1),
     }
 
 

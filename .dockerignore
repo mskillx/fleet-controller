@@ -1,0 +1,4 @@
+**
+!.dockerignore
+!device-simulator/**
+!device-updater-rs/**

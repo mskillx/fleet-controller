@@ -48,6 +48,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
     client.subscribe("fleet/+/stats")
     client.subscribe("fleet/+/commands/response")
     client.subscribe("fleet/+/register")
+    client.subscribe("fleet/+/update/status")
 
 
 def _handle_stats(payload: dict) -> None:
@@ -55,13 +56,29 @@ def _handle_stats(payload: dict) -> None:
     try:
         stat = models.DeviceStat(
             device_id=payload["device_id"],
-            timestamp=payload["timestamp"],
-            sensor1=payload["sensor1"],
-            sensor2=payload["sensor2"],
-            sensor3=payload["sensor3"],
-            version=payload.get("version"),
+            timestamp=payload["clock"],
+            last_acquisition=payload.get("last_acquisition"),
+            last_boot=payload.get("last_boot"),
+            lights_on=payload.get("lights_on"),
+            disk_usage=payload.get("disk_usage"),
+            analysis_queue=payload.get("analysis_queue"),
+            is_camera_acquiring=payload.get("is_camera_acquiring"),
+            lidar=payload.get("lidar"),
+            com4=payload.get("com4"),
         )
         db.add(stat)
+
+        # Keep device.current_version in sync with what the device reports
+        reported_version = payload.get("version")
+        if reported_version:
+            device = (
+                db.query(models.Device)
+                .filter(models.Device.device_id == payload["device_id"])
+                .first()
+            )
+            if device and device.current_version != reported_version:
+                device.current_version = reported_version
+
         db.commit()
         logger.debug(f"Stored stats for {payload['device_id']}")
         broadcast_to_websockets({"type": "stats_update", "data": payload})
@@ -116,12 +133,70 @@ def _handle_command_response(payload: dict) -> None:
         db.close()
 
 
+def _handle_update_status(payload: dict) -> None:
+    """Handle OTA progress/result messages from devices.
+
+    Expected payload::
+        {
+            "device_id": str,
+            "command_id": str,
+            "version": str,
+            "status": "downloading" | "installing" | "success" | "failed" | "rolledback",
+            "error": str | None,
+            "timestamp": ISO-8601 str
+        }
+    """
+    command_id = payload.get("command_id")
+    status = payload.get("status")
+    device_id = payload.get("device_id")
+    if not command_id or not status:
+        logger.warning(f"Invalid update/status payload: {payload}")
+        return
+
+    db: Session = SessionLocal()
+    try:
+        job = (
+            db.query(models.UpdateJob)
+            .filter(models.UpdateJob.command_id == command_id)
+            .first()
+        )
+        if job:
+            job.status = status
+            if payload.get("error"):
+                job.error_msg = payload["error"]
+            if status in {"success", "failed", "rolledback", "aborted"}:
+                job.finished_at = datetime.now(timezone.utc)
+
+            # On success, persist the new version on the Device record
+            if status == "success":
+                version = payload.get("version")
+                if version:
+                    device = (
+                        db.query(models.Device)
+                        .filter(models.Device.device_id == device_id)
+                        .first()
+                    )
+                    if device:
+                        device.current_version = version
+
+            db.commit()
+            logger.info(f"UpdateJob {command_id} ({device_id}) → {status}")
+        else:
+            logger.warning(f"No UpdateJob found for command_id={command_id}")
+
+        broadcast_to_websockets({"type": "update_status", "data": payload})
+    finally:
+        db.close()
+
+
 def on_message(client, userdata, msg):
     try:
         payload = json.loads(msg.payload.decode())
         topic = msg.topic
         if "/stats" in topic:
             _handle_stats(payload)
+        elif "/update/status" in topic:
+            _handle_update_status(payload)
         elif "/commands/response" in topic:
             _handle_command_response(payload)
         elif "/register" in topic:

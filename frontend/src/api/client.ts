@@ -1,5 +1,15 @@
 import axios from 'axios'
-import type { CommandLog, DeviceInfo, DeviceStat, Factory } from '../types'
+import type {
+  CommandLog,
+  DeploymentSummary,
+  DeployRequest,
+  DeployResponse,
+  DeviceInfo,
+  DeviceStat,
+  Factory,
+  UpdateJobStatus,
+  UpdatePackage,
+} from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -31,3 +41,36 @@ export const sendCommand = (
   payload?: Record<string, unknown>,
 ): Promise<CommandLog> =>
   api.post(`/devices/${deviceId}/commands`, { command, payload }).then((r) => r.data)
+
+// ── OTA updates ───────────────────────────────────────────────────────────────
+
+export const getPackages = (): Promise<UpdatePackage[]> =>
+  api.get('/updates/').then((r) => r.data)
+
+export const getLatestPackage = (): Promise<UpdatePackage> =>
+  api.get('/updates/latest').then((r) => r.data)
+
+export const uploadPackage = (version: string, file: File): Promise<UpdatePackage> => {
+  const form = new FormData()
+  form.append('file', file)
+  return api
+    .post(`/updates/?version=${encodeURIComponent(version)}`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    .then((r) => r.data)
+}
+
+export const deactivatePackage = (version: string): Promise<void> =>
+  api.delete(`/updates/${version}`).then(() => undefined)
+
+export const deployPackage = (version: string, body: DeployRequest): Promise<DeployResponse> =>
+  api.post(`/updates/${version}/deploy`, body).then((r) => r.data)
+
+export const getDeployments = (): Promise<DeploymentSummary[]> =>
+  api.get('/updates/deployments').then((r) => r.data)
+
+export const getDeploymentJobs = (deployId: string): Promise<UpdateJobStatus[]> =>
+  api.get(`/updates/deployments/${deployId}`).then((r) => r.data)
+
+export const getDeviceUpdateJobs = (deviceId: string): Promise<UpdateJobStatus[]> =>
+  api.get(`/updates/jobs/${deviceId}`).then((r) => r.data)
